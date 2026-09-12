@@ -1,5 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr
+from enum import Enum
 
 class TicketCreate(BaseModel):
     customer_name: str
@@ -37,3 +38,16 @@ class TicketListResponse(BaseModel):
     subject: str
     status:str
     created_at: datetime
+
+class TicketStatus(str, Enum):
+    OPEN = "Open"
+    IN_PROGRESS = "In Progress"
+    CLOSED = "Closed"
+
+class TicketUpdate(BaseModel):
+    status: TicketStatus
+    notes: str | None=None
+
+class TicketUpdateResponse(BaseModel):
+    success: bool
+    updated_at: datetime
