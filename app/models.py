@@ -55,6 +55,7 @@ class Ticket(Base):
     )
 
     notes: Mapped[list["Note"]] = relationship(
+        "Note",
         back_populates="ticket",
         cascade="all, delete-orphan",
     )
@@ -64,9 +65,9 @@ class Note(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     ticket_id: Mapped[str] = mapped_column(
-        String(20),
         ForeignKey("tickets.ticket_id"),
         nullable=False,
+        index=True,
     )
 
     note_text: Mapped[str] = mapped_column(
@@ -81,5 +82,6 @@ class Note(Base):
     )
 
     ticket: Mapped["Ticket"] = relationship(
+        "Ticket",
         back_populates="notes",
     )
