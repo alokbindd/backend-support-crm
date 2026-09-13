@@ -37,10 +37,18 @@ def get_tickets(status:Optional[str]=None, search:Optional[str] = None, db: Sess
     query =  db.query(Ticket)
 
     if status:
-        query = query.filter(Ticket.status==status)
+        status_map = {
+            "open": "Open",
+            "in progress": "In Progress",
+            "closed": "Closed"
+        }
+
+        normalized_status = status_map.get(status.lower())
+        if normalized_status:
+            query = query.filter(Ticket.status==normalized_status)
 
     if search:
-        search_term = f"%{search}%" 
+        search_term = (f"%{search}%").lower()
         query = query.filter(
             or_(
                 Ticket.customer_name.ilike(search_term),
