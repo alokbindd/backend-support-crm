@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from enum import Enum
 
 class TicketCreate(BaseModel):
@@ -32,17 +32,29 @@ class TicketDetailResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("status",mode="before")
+    @classmethod
+    def get_status_display_name(cls, value):
+        return value.display_name
+
 class TicketListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     ticket_id: str
     customer_name: str
     subject: str
     status:str
     created_at: datetime
 
+    @field_validator("status",mode="before")
+    @classmethod
+    def get_status_display_name(cls, value):
+        return value.display_name
+
 class TicketStatus(str, Enum):
-    OPEN = "Open"
-    IN_PROGRESS = "In Progress"
-    CLOSED = "Closed"
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    CLOSED = "closed"
 
 class TicketUpdate(BaseModel):
     status: TicketStatus
