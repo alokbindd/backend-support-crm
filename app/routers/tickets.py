@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Ticket, Note
+from app.models import Ticket, Note, Ticketstatus
 from app.schemas import TicketCreate, TicketCreatedResponse, TicketListResponse, TicketDetailResponse, TicketUpdate, TicketUpdateResponse
 from typing import Optional
 from sqlalchemy import or_
@@ -13,13 +13,21 @@ router = APIRouter(
 
 @router.post("",response_model=TicketCreatedResponse, status_code=status.HTTP_201_CREATED,)
 def createticket(ticketdata: TicketCreate, db: Session = Depends(get_db)):
+    open_status = db.query(Ticketstatus).filter(Ticketstatus.code=='open').first()
+
+    if not open_status:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Default ticket status not configured",
+        )
+    
     ticket = Ticket(
         ticket_id = "TEMP",
         customer_name = ticketdata.customer_name,
         customer_email= ticketdata.customer_email,
         subject= ticketdata.subject,
         description= ticketdata.description,
-        status="open",
+        status_id=open_status.id,
     )
 
     db.add(ticket)
@@ -37,15 +45,7 @@ def get_tickets(status:Optional[str]=None, search:Optional[str] = None, db: Sess
     query =  db.query(Ticket)
 
     if status:
-        status_map = {
-            "open": "Open",
-            "in progress": "In Progress",
-            "closed": "Closed"
-        }
-
-        normalized_status = status_map.get(status.lower())
-        if normalized_status:
-            query = query.filter(Ticket.status==normalized_status)
+        query = query.join(Ticketstatus).filter(Ticketstatus.code==status)
 
     if search:
         search_term = (f"%{search}%").lower()
@@ -84,8 +84,15 @@ def update_ticket(ticket_id: str, ticket_data: TicketUpdate, db: Session = Depen
             detail="Ticket not found"
         )
 
-    ticket.status = ticket_data.status.value
+    status_record = (db.query(Ticketstatus).filter(Ticketstatus.code==ticket_data.status.value).first())
+    if not status_record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid ticket status"
+        )
 
+    ticket.status_id = status_record.id
+    
     if ticket_data.notes:
         note = Note(
             ticket_id=ticket.ticket_id,
