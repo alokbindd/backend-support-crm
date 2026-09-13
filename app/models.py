@@ -35,10 +35,14 @@ class Ticket(Base):
         nullable=False,
     )
 
-    status: Mapped[str] = mapped_column(
-        String(20),
+    status_id: Mapped[int] = mapped_column(
+        ForeignKey('ticket_statuses.id'),
         nullable=False,
-        default="Open",
+    )
+
+    status: Mapped["Ticketstatus"] = relationship(
+        "Ticketstatus",
+        back_populates="tickets",
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -84,4 +88,26 @@ class Note(Base):
     ticket: Mapped["Ticket"] = relationship(
         "Ticket",
         back_populates="notes",
+    )
+
+class Ticketstatus(Base):
+    __tablename__ = "ticket_statuses"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    code: Mapped[str] = mapped_column(
+        String(30),
+        unique=True,
+        nullable=False,
+    )
+
+    display_name: Mapped[str] = mapped_column(
+        String(50),
+        unique=True,
+        nullable=False,
+    )
+
+    tickets: Mapped[list["Ticket"]] = relationship(
+        "Ticket",
+        back_populates="status",
     )
